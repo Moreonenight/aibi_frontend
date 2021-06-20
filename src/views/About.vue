@@ -21,12 +21,18 @@
       <el-button type="primary" :loading="false" id="search-button"
         >搜索</el-button
       >
-      <el-button :loading="false" id="test-button" @click="addNode()"
-        >加点</el-button
-      >      
+      <el-button :loading="false" id="clear-button" @click="clearNet"
+        >清空</el-button
+      >
     </el-row>
     <br />
-    <d3-network :net-nodes="nodes" :net-links="links" :options="options" />
+    <d3-network
+      :net-nodes="nodes"
+      :net-links="links"
+      :options="options"
+      @node-click="nodeClick"
+      @link-click="linkClick"
+    />
     <div class="tools">
       <ul>
         <li v-for="(t, to) in tools" :key="to">
@@ -37,6 +43,18 @@
       </ul>
       <div class="tip">{{ tools[tool].tip }}</div>
     </div>
+    <el-dialog
+      :title="dialogType + '详情'"
+      :visible.sync="dialogVisible"
+      width="30%"
+    >
+      <ul>
+        <li>{{ this.dialogType }}名称：{{ this.dialogName }}</li>
+      </ul>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -48,20 +66,27 @@ export default {
   },
   data() {
     return {
+      dialogType: "",
+      dialogVisible: false,
+      dialogName: "",
       tool: "pointer",
       tools: {
         pointer: {
-          tip: "选中节点查看详情",
-          value: "P"
+          tip: "拖放图例",
+          value: "P",
+        },
+        checker: {
+          tip: "查看详情",
+          value: "C",
         },
         expander: {
-          tip: "点击节点进行扩展",
-          value: "E"
+          tip: "进行扩展",
+          value: "E",
         },
-        fixxer: {
-          tip: "点击节点固定位置",
-          value: "F"
-        },        
+        fixer: {
+          tip: "固定位置",
+          value: "F",
+        },
       },
       suggestions: [],
       auto_complete_state: "",
@@ -72,8 +97,8 @@ export default {
         { id: 3, name: "test2" },
       ],
       links: [
-        { tid: 1, sid: 2 },
-        { tid: 2, sid: 3 },
+        { tid: 1, sid: 2, name: "1" },
+        { tid: 2, sid: 3, name: "2" },
       ],
       options: {
         canvas: false,
@@ -119,15 +144,56 @@ export default {
     },
     setTool(tool) {
       this.tool = tool;
-      let cursorClass = tool === "pointer" ? "" : "cross-cursor";
-      this.$el.className = cursorClass;
+      let cursorClass = tool === "pointer" ? "" : "crosshair";
+      let svgField = document.querySelector(".net");
+      svgField.style.cursor = cursorClass;
     },
     buttonClass(tool) {
       if (tool === this.tool) return "selected";
     },
-    addNode(){
-      this.nodes.push({"name": "爬"})
-    }
+    addNode() {
+      this.nodes.push({ name: "爬" });
+    },
+    clearNet() {
+      this.nodes.splice(0, this.nodes.length);
+      this.links.splice(0, this.links.length);
+    },
+    nodeClick(event, node) {
+      switch (this.tool) {
+        case "checker":
+          this.dialogType = "节点";
+          this.dialogName = node.name;
+          this.dialogVisible = true;
+          break;
+        case "expander":
+          break;
+        case "fixer":
+          this.pinNode(node);
+          break;
+        default:
+          // pointer
+          break;
+      }
+    },
+    linkClick(event, link) {
+      if (this.tool === "checker") {
+        this.dialogType = "关系";
+        this.dialogName = link.name;
+        this.dialogVisible = true;
+      }
+    },
+    pinNode(node) {
+      if (!node.pinned) {
+        node.pinned = true;
+        node.fx = node.x;
+        node.fy = node.y;
+      } else {
+        node.pinned = false;
+        node.fx = null;
+        node.fy = null;
+      }
+      this.nodes[node.index] = node;
+    },
   },
 };
 </script>
