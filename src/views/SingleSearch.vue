@@ -122,22 +122,24 @@ export default {
   },
   methods: {
     querySearchAsync(queryString, cb) {
-      var restaurants = this.restaurants;
-      var results = queryString
-        ? restaurants.filter(this.createStateFilter(queryString))
-        : restaurants;
+      // FIXME: Replace these with correct codes.
+      // var restaurants = this.restaurants;
+      // var results = queryString
+      //   ? restaurants.filter(this.createStateFilter(queryString))
+      //   : restaurants;
 
-      clearTimeout(this.timeout);
-      this.timeout = setTimeout(() => {
-        cb(results);
-      }, 3000 * Math.random());
+      // clearTimeout(this.timeout);
+      // this.timeout = setTimeout(() => {
+      //   cb(results);
+      // }, 3000 * Math.random());
     },
     createStateFilter(queryString) {
-      return (state) => {
-        return (
-          state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
-        );
-      };
+      // FIXME: Replace these with correct codes.
+      // return (state) => {
+      //   return (
+      //     state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+      //   );
+      // };
     },
     handleSelect(item) {
       console.log(item);

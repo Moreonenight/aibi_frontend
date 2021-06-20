@@ -3,7 +3,7 @@
     
     <div id="nav">
       <router-link to="/">测试页</router-link> |
-      <router-link to="/search">查询企业及个人</router-link>
+      <router-link to="/single-search">查询企业及个人</router-link>
     </div>
     <router-view/>
   </div>
