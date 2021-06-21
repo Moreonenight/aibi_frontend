@@ -18,12 +18,14 @@
         placeholder="请输入企业或个人名称"
         @select="handleSelect"
       ></el-autocomplete>
-      <el-button type="primary" :loading="loading" id="search-button"
+      <el-button
+        type="primary"
+        :loading="loading"
+        id="search-button"
+        @click="queryByButton"
         >搜索</el-button
       >
-      <el-button id="clear-button" @click="queryPerson('10390240')"
-        >清空</el-button
-      >
+      <el-button id="clear-button" @click="clearNet">清空</el-button>
     </el-row>
     <br />
     <d3-network
@@ -129,15 +131,6 @@ export default {
   },
   methods: {
     querySearchAsync(queryString, cb) {
-      // FIXME: Replace these with correct codes.
-      // var restaurants = this.restaurants;
-      // var results = queryString
-      //   ? restaurants.filter(this.createStateFilter(queryString))
-      //   : restaurants;
-      // clearTimeout(this.timeout);
-      // this.timeout = setTimeout(() => {
-      //   cb(results);
-      // }, 3000 * Math.random());
       if (!queryString) {
         queryString = "";
       }
@@ -174,6 +167,16 @@ export default {
           cb([]);
         });
     },
+    queryByButton(){
+      let id = this.currentItem.identity;
+      this.addNode(id, this.currentItem.name, this.selected_value, null)
+      if(this.selected_value === "person"){
+        this.getOrganizationFromPerson(id, null)
+      }
+      else{
+        this.getPersonFromOrganization(id, null)
+      }
+    },
     queryPerson(id) {
       this.loading = true;
       axios({
@@ -181,26 +184,26 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getPersonById?Id=" + id,
         timeout: 6000,
-      }).then((response) => {
-        this.loading = false;
-        console.log(response.data);
-        if (response.data.success) {
+      })
+        .then((response) => {
+          this.loading = false;
+          console.log(response.data);
+          if (response.data.success) {
           } else {
             Notification.error({
               title: "出错啦",
               message: "请求格式有误",
               duration: 2000,
             });
-            cb([]);
           }
         })
         .catch(() => {
+          this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "请求个人详情失败",
             duration: 2000,
           });
-          cb([]);
         });
     },
     queryOrganization(id) {
@@ -210,87 +213,102 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getOrganizationById?Id=" + id,
         timeout: 6000,
-      }).then((response) => {
-        this.loading = false;
-        console.log(response.data);
-        if (response.data.success) {
+      })
+        .then((response) => {
+          this.loading = false;
+          console.log(response.data);
+          if (response.data.success) {
           } else {
             Notification.error({
               title: "出错啦",
               message: "请求格式有误",
               duration: 2000,
             });
-            cb([]);
           }
         })
         .catch(() => {
+          this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "请求企业详情失败",
             duration: 2000,
           });
-          cb([]);
         });
     },
-    getOrganizationFromPerson(id) {
+    getOrganizationFromPerson(id, node) {
       this.loading = true;
       axios({
         method: "POST",
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getOrganizationFromPerson?id=" + id,
         timeout: 6000,
-      }).then((response) => {
-        this.loading = false;
-        console.log(response.data);
-        if (response.data.success) {
+      })
+        .then((response) => {
+          this.loading = false;
+          console.log(response.data);
+          if (response.data.success) {
+            let results = response.data.results;
+            for (let result of results) {
+              this.addNode(result.identity, result.name, "organization" , node);
+            }
+            for (let result of results) {
+              this.addLink(result.relationship, node.id, result.identity);
+            }
           } else {
             Notification.error({
               title: "出错啦",
               message: "请求格式有误",
               duration: 2000,
             });
-            cb([]);
           }
         })
         .catch(() => {
+          this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "单点企业查询失败",
             duration: 2000,
           });
-          cb([]);
         });
     },
-    getPersonFromOrganization(id) {
+    getPersonFromOrganization(id, node) {
       this.loading = true;
       axios({
         method: "POST",
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getPersonFromOrganization?id=" + id,
         timeout: 6000,
-      }).then((response) => {
-        this.loading = false;
-        console.log(response.data);
-        if (response.data.success) {
+      })
+        .then((response) => {
+          this.loading = false;
+          console.log(response.data);
+          if (response.data.success) {
+            let results = response.data.results;
+            for (let result of results) {
+              this.addNode(result.identity, result.name, "person", node);
+            }
+            for (let result of results) {
+              this.addLink(result.relationship, node.id, result.identity);
+            }
           } else {
             Notification.error({
               title: "出错啦",
               message: "请求格式有误",
               duration: 2000,
             });
-            cb([]);
           }
         })
         .catch(() => {
+          this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "单点个人查询失败",
             duration: 2000,
           });
-          cb([]);
         });
     },
     handleSelect(item) {
+      console.log(this.currentItem)
       this.currentItem = item;
     },
     setTool(tool) {
@@ -302,8 +320,8 @@ export default {
     buttonClass(tool) {
       if (tool === this.tool) return "selected";
     },
-    addNode(id, name, node) {
-      let nNode = { id: id, name: name };
+    addNode(id, name, type, node) {
+      let nNode = { id: id, name: name, type: type };
       if (node !== null) {
         nNode.x = node.x + 50;
         nNode.y = node.y + 50;
@@ -322,11 +340,23 @@ export default {
     nodeClick(event, node) {
       switch (this.tool) {
         case "checker":
-          this.dialogType = "节点";
+          if(node.type === "person"){
+            this.dialogType = "个人节点";
+            this.queryPerson
+          }
+          else{
+            this.dialogType = "企业节点";
+          }
           this.dialogName = node.name;
           this.dialogVisible = true;
           break;
         case "expander":
+          if(node.type === "person"){
+            this.getOrganizationFromPerson(node.id, node)
+          }
+          else{
+            this.getPersonFromOrganization(node.id, node)
+          }
           break;
         case "fixer":
           this.pinNode(node);
