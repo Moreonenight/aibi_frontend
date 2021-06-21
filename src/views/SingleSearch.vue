@@ -80,11 +80,6 @@
       :visible.sync="dialogVisible"
       width="30%"
     >
-      <!-- <ul>
-        <li v-for="property in dialogProperties" :key="property.name">
-          {{ property.label }}：{{ property.value }}
-        </li>
-      </ul> -->
       <el-table :data="dialogProperties" stripe style="width: 100%">
         <el-table-column prop="label" label="属性" align="center">
         </el-table-column>
@@ -235,6 +230,28 @@ export default {
           console.log(response.data);
           if (response.data.success) {
             let result = response.data.results;
+            if (result.degree) {
+              let degreeTranslation = "";
+              if (result.degree === "Bachelor") {
+                degreeTranslation = "学士学位";
+              } else if (result.degree === "Master") {
+                degreeTranslation = "硕士学位";
+              } else {
+                degreeTranslation = "博士学位";
+              }
+              this.dialogProperties.push({
+                name: "degree",
+                label: "学位",
+                value: degreeTranslation,
+              });
+            }
+            if (result.properties && result.properties["preferred-name"]) {
+              this.dialogProperties.push({
+                name: "preferredName",
+                label: "昵称",
+                value: result.properties["preferred-name"],
+              });
+            }
             this.dialogProperties.push({
               name: "degreeCentrality",
               label: "度中心性",
@@ -287,6 +304,13 @@ export default {
           console.log(response.data);
           if (response.data.success) {
             let result = response.data.results;
+            if (result.properties && result.properties.HeadquartersAddress) {
+              this.dialogProperties.push({
+                name: "headquartersAddress",
+                label: "总部位置",
+                value: result.properties.HeadquartersAddress.trim(),
+              });
+            }
             this.dialogProperties.push({
               name: "degreeCentrality",
               label: "度中心性",
