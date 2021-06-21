@@ -27,31 +27,44 @@
         >搜索</el-button
       >
       <el-button id="clear-button" @click="clearNet">清空</el-button>
-      <el-checkbox v-model="nodeLabels"
-        >显示节点名</el-checkbox
-      >
-      <el-checkbox v-model="linkLabels">
-        显示关系名</el-checkbox
-      >
+      <el-checkbox v-model="nodeLabels">显示节点名</el-checkbox>
+      <el-checkbox v-model="linkLabels"> 显示关系名</el-checkbox>
     </el-row>
-    <br />
-    <d3-network
-      :net-nodes="nodes"
-      :net-links="links"
-      :options="options"
-      @node-click="nodeClick"
-      @link-click="linkClick"
-    />
-    <div class="tools">
-      <ul>
-        <li v-for="(t, to) in tools" :key="to">
-          <button class="circle" @click="setTool(to)" :class="buttonClass(to)">
-            <span>{{ t.value }}</span>
-          </button>
-        </li>
-      </ul>
-      <div class="tip">{{ tools[tool].tip }}</div>
-    </div>
+    <el-row>
+      <d3-network
+        :net-nodes="nodes"
+        :net-links="links"
+        :options="options"
+        @node-click="nodeClick"
+        @link-click="linkClick"
+      />
+      <div class="tools">
+        <ul>
+          <li v-for="(t, to) in tools" :key="to">
+            <button
+              class="circle"
+              @click="setTool(to)"
+              :class="buttonClass(to)"
+            >
+              <span>{{ t.value }}</span>
+            </button>
+          </li>
+        </ul>
+        <div class="tip">{{ tools[tool].tip }}</div>
+      </div>
+    </el-row>
+    <el-row>
+      <div class="sliders">
+        <div class="size-slider">
+          <span class="demonstration">节点尺寸</span>
+          <el-slider :min="5" :max="30" v-model="nodeSize" class="size-slider-item"></el-slider>
+        </div>
+        <div class="size-slider">
+          <span class="demonstration">连线尺寸</span>
+          <el-slider :min="1" :max="20" v-model="linkWidth" class="size-slider-item"></el-slider>
+        </div>
+      </div>
+    </el-row>    
     <el-dialog
       :title="dialogType + '详情'"
       :visible.sync="dialogVisible"
@@ -141,7 +154,7 @@ export default {
     },
   },
   methods: {
-    selectChange(){
+    selectChange() {
       this.auto_complete_state = "";
       this.disable_search = true;
     },
@@ -373,8 +386,7 @@ export default {
       );
     },
     handleSelect(item) {
-      this.disable_search = false,
-      console.log(this.currentItem);
+      (this.disable_search = false), console.log(this.currentItem);
       this.currentItem = item;
     },
     setTool(tool) {
@@ -485,6 +497,13 @@ export default {
 
 <style src="vue-d3-network/dist/vue-d3-network.css"></style>
 <style>
+.el-row {
+  margin-bottom: 20px;
+}
+.size-slider {
+  width: 20%;
+  margin: auto;
+}
 #search-button {
   margin-left: 2em;
 }
