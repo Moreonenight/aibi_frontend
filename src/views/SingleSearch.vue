@@ -18,10 +18,10 @@
         placeholder="请输入企业或个人名称"
         @select="handleSelect"
       ></el-autocomplete>
-      <el-button type="primary" :loading="false" id="search-button"
+      <el-button type="primary" :loading="loading" id="search-button"
         >搜索</el-button
       >
-      <el-button :loading="false" id="clear-button" @click="clearNet"
+      <el-button id="clear-button" @click="queryPerson('10390240')"
         >清空</el-button
       >
     </el-row>
@@ -60,12 +60,18 @@
 
 <script>
 import D3Network from "vue-d3-network";
+import axios from "axios";
+import { Notification } from "element-ui";
+
 export default {
   components: {
     D3Network,
   },
   data() {
     return {
+      currentItem: "",
+      loading: false,
+      lastLinkId: 0,
       dialogType: "",
       dialogVisible: false,
       dialogName: "",
@@ -99,6 +105,7 @@ export default {
       links: [
         { tid: 1, sid: 2, name: "1" },
         { tid: 2, sid: 3, name: "2" },
+        { tid: 2, sid: 3, name: "3" },
       ],
       options: {
         canvas: false,
@@ -117,7 +124,7 @@ export default {
           label: "企业",
         },
       ],
-      selected_value: "",
+      selected_value: "person",
     };
   },
   methods: {
@@ -127,22 +134,164 @@ export default {
       // var results = queryString
       //   ? restaurants.filter(this.createStateFilter(queryString))
       //   : restaurants;
-
       // clearTimeout(this.timeout);
       // this.timeout = setTimeout(() => {
       //   cb(results);
       // }, 3000 * Math.random());
+      if (!queryString) {
+        queryString = "";
+      }
+      axios({
+        method: "POST",
+        baseURL: process.env.VUE_APP_API_BASE_URL,
+        url:
+          "/auto?queryString=" + queryString + "&type=" + this.selected_value,
+        timeout: 6000,
+      })
+        .then((response) => {
+          console.log(response.data);
+          if (response.data.success) {
+            let results = response.data.results;
+            for (let result of results) {
+              result.value = result.name;
+            }
+            cb(results);
+          } else {
+            Notification.error({
+              title: "出错啦",
+              message: "请求格式有误",
+              duration: 2000,
+            });
+            cb([]);
+          }
+        })
+        .catch(() => {
+          Notification.error({
+            title: "网络中断",
+            message: "请求自动补全失败",
+            duration: 2000,
+          });
+          cb([]);
+        });
     },
-    createStateFilter(queryString) {
-      // FIXME: Replace these with correct codes.
-      // return (state) => {
-      //   return (
-      //     state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
-      //   );
-      // };
+    queryPerson(id) {
+      this.loading = true;
+      axios({
+        method: "POST",
+        baseURL: process.env.VUE_APP_API_BASE_URL,
+        url: "/getPersonById?Id=" + id,
+        timeout: 6000,
+      }).then((response) => {
+        this.loading = false;
+        console.log(response.data);
+        if (response.data.success) {
+          } else {
+            Notification.error({
+              title: "出错啦",
+              message: "请求格式有误",
+              duration: 2000,
+            });
+            cb([]);
+          }
+        })
+        .catch(() => {
+          Notification.error({
+            title: "网络中断",
+            message: "请求个人详情失败",
+            duration: 2000,
+          });
+          cb([]);
+        });
+    },
+    queryOrganization(id) {
+      this.loading = true;
+      axios({
+        method: "POST",
+        baseURL: process.env.VUE_APP_API_BASE_URL,
+        url: "/getOrganizationById?Id=" + id,
+        timeout: 6000,
+      }).then((response) => {
+        this.loading = false;
+        console.log(response.data);
+        if (response.data.success) {
+          } else {
+            Notification.error({
+              title: "出错啦",
+              message: "请求格式有误",
+              duration: 2000,
+            });
+            cb([]);
+          }
+        })
+        .catch(() => {
+          Notification.error({
+            title: "网络中断",
+            message: "请求企业详情失败",
+            duration: 2000,
+          });
+          cb([]);
+        });
+    },
+    getOrganizationFromPerson(id) {
+      this.loading = true;
+      axios({
+        method: "POST",
+        baseURL: process.env.VUE_APP_API_BASE_URL,
+        url: "/getOrganizationFromPerson?id=" + id,
+        timeout: 6000,
+      }).then((response) => {
+        this.loading = false;
+        console.log(response.data);
+        if (response.data.success) {
+          } else {
+            Notification.error({
+              title: "出错啦",
+              message: "请求格式有误",
+              duration: 2000,
+            });
+            cb([]);
+          }
+        })
+        .catch(() => {
+          Notification.error({
+            title: "网络中断",
+            message: "单点企业查询失败",
+            duration: 2000,
+          });
+          cb([]);
+        });
+    },
+    getPersonFromOrganization(id) {
+      this.loading = true;
+      axios({
+        method: "POST",
+        baseURL: process.env.VUE_APP_API_BASE_URL,
+        url: "/getPersonFromOrganization?id=" + id,
+        timeout: 6000,
+      }).then((response) => {
+        this.loading = false;
+        console.log(response.data);
+        if (response.data.success) {
+          } else {
+            Notification.error({
+              title: "出错啦",
+              message: "请求格式有误",
+              duration: 2000,
+            });
+            cb([]);
+          }
+        })
+        .catch(() => {
+          Notification.error({
+            title: "网络中断",
+            message: "单点个人查询失败",
+            duration: 2000,
+          });
+          cb([]);
+        });
     },
     handleSelect(item) {
-      console.log(item);
+      this.currentItem = item;
     },
     setTool(tool) {
       this.tool = tool;
@@ -153,12 +302,22 @@ export default {
     buttonClass(tool) {
       if (tool === this.tool) return "selected";
     },
-    addNode() {
-      this.nodes.push({ name: "爬" });
+    addNode(id, name, node) {
+      let nNode = { id: id, name: name };
+      if (node !== null) {
+        nNode.x = node.x + 50;
+        nNode.y = node.y + 50;
+      }
+      this.nodes.concat(nNode);
+    },
+    addLink(name, node_s, node_t) {
+      let nLink = { id: this.lastLinkId, sid: node_s, tid: node_t, name: name };
+      this.links.concat(nLink);
     },
     clearNet() {
       this.nodes.splice(0, this.nodes.length);
       this.links.splice(0, this.links.length);
+      this.lastLinkId = 0;
     },
     nodeClick(event, node) {
       switch (this.tool) {
