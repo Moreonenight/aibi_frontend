@@ -57,24 +57,40 @@
       <div class="sliders">
         <div class="size-slider">
           <span class="demonstration">节点尺寸</span>
-          <el-slider :min="5" :max="30" v-model="nodeSize" class="size-slider-item"></el-slider>
+          <el-slider
+            :min="5"
+            :max="30"
+            v-model="nodeSize"
+            class="size-slider-item"
+          ></el-slider>
         </div>
         <div class="size-slider">
           <span class="demonstration">连线尺寸</span>
-          <el-slider :min="1" :max="20" v-model="linkWidth" class="size-slider-item"></el-slider>
+          <el-slider
+            :min="1"
+            :max="20"
+            v-model="linkWidth"
+            class="size-slider-item"
+          ></el-slider>
         </div>
       </div>
-    </el-row>    
+    </el-row>
     <el-dialog
       :title="dialogType + '详情'"
       :visible.sync="dialogVisible"
       width="30%"
     >
-      <ul>
+      <!-- <ul>
         <li v-for="property in dialogProperties" :key="property.name">
           {{ property.label }}：{{ property.value }}
         </li>
-      </ul>
+      </ul> -->
+      <el-table :data="dialogProperties" stripe style="width: 100%">
+        <el-table-column prop="label" label="属性" align="center">
+        </el-table-column>
+        <el-table-column prop="value" label="值" align="center">
+        </el-table-column>
+      </el-table>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">确 定</el-button>
       </span>
@@ -399,11 +415,10 @@ export default {
       if (tool === this.tool) return "selected";
     },
     addNode(id, name, type, node) {
-      let color = ""
-      if(type === "person"){
+      let color = "";
+      if (type === "person") {
         color = "orange";
-      }
-      else{
+      } else {
         color = "green";
       }
       let nNode = { id: id, name: name, type: type, _color: color };
