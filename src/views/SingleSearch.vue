@@ -150,7 +150,7 @@ export default {
           label: "企业",
         },
       ],
-      selected_value: "person",
+      selected_value: "organization",
     };
   },
   computed: {
