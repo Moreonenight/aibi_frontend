@@ -2,7 +2,7 @@
   <div class="about">
     <h1>查询数据集</h1>
     <el-row>
-      <el-select v-model="selected_value" placeholder="请选择">
+      <el-select v-model="selected_value" @change="selectChange">
         <el-option
           v-for="item in select_options"
           :key="item.value"
@@ -23,9 +23,16 @@
         :loading="loading"
         id="search-button"
         @click="queryByButton"
+        :disabled="disable_search"
         >搜索</el-button
       >
       <el-button id="clear-button" @click="clearNet">清空</el-button>
+      <el-checkbox v-model="nodeLabels"
+        >显示节点名</el-checkbox
+      >
+      <el-checkbox v-model="linkLabels">
+        显示关系名</el-checkbox
+      >
     </el-row>
     <br />
     <d3-network
@@ -51,7 +58,9 @@
       width="30%"
     >
       <ul>
-        <li>{{ this.dialogType }}名称：{{ this.dialogName }}</li>
+        <li v-for="property in dialogProperties" :key="property.name">
+          {{ property.label }}：{{ property.value }}
+        </li>
       </ul>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">确 定</el-button>
@@ -71,12 +80,13 @@ export default {
   },
   data() {
     return {
+      disable_search: true,
       currentItem: "",
       loading: false,
       lastLinkId: 0,
       dialogType: "",
       dialogVisible: false,
-      dialogName: "",
+      dialogProperties: [],
       tool: "pointer",
       tools: {
         pointer: {
@@ -99,23 +109,13 @@ export default {
       suggestions: [],
       auto_complete_state: "",
       timeout: null,
-      nodes: [
-        { id: 1, name: "test" },
-        { id: 2, name: "test1" },
-        { id: 3, name: "test2" },
-      ],
-      links: [
-        { tid: 1, sid: 2, name: "1" },
-        { tid: 2, sid: 3, name: "2" },
-        { tid: 2, sid: 3, name: "3" },
-      ],
-      options: {
-        canvas: false,
-        nodeSize: 20,
-        linkWidth: 5,
-        nodeLabels: true,
-        linkLabels: true,
-      },
+      nodes: [],
+      links: [],
+      canvas: false,
+      nodeSize: 20,
+      linkWidth: 5,
+      nodeLabels: true,
+      linkLabels: true,
       select_options: [
         {
           value: "person",
@@ -129,8 +129,24 @@ export default {
       selected_value: "person",
     };
   },
+  computed: {
+    options() {
+      return {
+        canvas: this.canvas,
+        nodeSize: this.nodeSize,
+        linkWidth: this.linkWidth,
+        nodeLabels: this.nodeLabels,
+        linkLabels: this.linkLabels,
+      };
+    },
+  },
   methods: {
+    selectChange(){
+      this.auto_complete_state = "";
+      this.disable_search = true;
+    },
     querySearchAsync(queryString, cb) {
+      this.disable_search = true;
       if (!queryString) {
         queryString = "";
       }
@@ -140,8 +156,8 @@ export default {
         url:
           "/auto?queryString=" + queryString + "&type=" + this.selected_value,
         timeout: 6000,
-      })
-        .then((response) => {
+      }).then(
+        (response) => {
           console.log(response.data);
           if (response.data.success) {
             let results = response.data.results;
@@ -157,24 +173,24 @@ export default {
             });
             cb([]);
           }
-        })
-        .catch(() => {
+        },
+        () => {
           Notification.error({
             title: "网络中断",
             message: "请求自动补全失败",
             duration: 2000,
           });
           cb([]);
-        });
+        }
+      );
     },
-    queryByButton(){
+    queryByButton() {
       let id = this.currentItem.identity;
-      this.addNode(id, this.currentItem.name, this.selected_value, null)
-      if(this.selected_value === "person"){
-        this.getOrganizationFromPerson(id, null)
-      }
-      else{
-        this.getPersonFromOrganization(id, null)
+      this.addNode(id, this.currentItem.name, this.selected_value, null);
+      if (this.selected_value === "person") {
+        this.getOrganizationFromPerson(id, null);
+      } else {
+        this.getPersonFromOrganization(id, null);
       }
     },
     queryPerson(id) {
@@ -184,11 +200,33 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getPersonById?Id=" + id,
         timeout: 6000,
-      })
-        .then((response) => {
+      }).then(
+        (response) => {
           this.loading = false;
           console.log(response.data);
           if (response.data.success) {
+            let result = response.data.results;
+            this.dialogProperties.push({
+              name: "degreeCentrality",
+              label: "度中心性",
+              value: result.degreeCentrality,
+            });
+            this.dialogProperties.push({
+              name: "betweennessCentrality",
+              label: "介数中心性",
+              value: result.betweennessCentrality,
+            });
+            this.dialogProperties.push({
+              name: "pageRank",
+              label: "PageRank 影响力",
+              value: result.pageRank,
+            });
+            this.dialogProperties.push({
+              name: "score",
+              label: "总分",
+              value: result.score,
+            });
+            this.dialogVisible = true;
           } else {
             Notification.error({
               title: "出错啦",
@@ -196,15 +234,16 @@ export default {
               duration: 2000,
             });
           }
-        })
-        .catch(() => {
+        },
+        () => {
           this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "请求个人详情失败",
             duration: 2000,
           });
-        });
+        }
+      );
     },
     queryOrganization(id) {
       this.loading = true;
@@ -213,11 +252,33 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getOrganizationById?Id=" + id,
         timeout: 6000,
-      })
-        .then((response) => {
+      }).then(
+        (response) => {
           this.loading = false;
           console.log(response.data);
           if (response.data.success) {
+            let result = response.data.results;
+            this.dialogProperties.push({
+              name: "degreeCentrality",
+              label: "度中心性",
+              value: result.degreeCentrality,
+            });
+            this.dialogProperties.push({
+              name: "betweennessCentrality",
+              label: "介数中心性",
+              value: result.betweennessCentrality,
+            });
+            this.dialogProperties.push({
+              name: "pageRank",
+              label: "PageRank 影响力",
+              value: result.pageRank,
+            });
+            this.dialogProperties.push({
+              name: "score",
+              label: "总分",
+              value: result.score,
+            });
+            this.dialogVisible = true;
           } else {
             Notification.error({
               title: "出错啦",
@@ -225,15 +286,16 @@ export default {
               duration: 2000,
             });
           }
-        })
-        .catch(() => {
+        },
+        () => {
           this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "请求企业详情失败",
             duration: 2000,
           });
-        });
+        }
+      );
     },
     getOrganizationFromPerson(id, node) {
       this.loading = true;
@@ -242,17 +304,17 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getOrganizationFromPerson?id=" + id,
         timeout: 6000,
-      })
-        .then((response) => {
+      }).then(
+        (response) => {
           this.loading = false;
           console.log(response.data);
           if (response.data.success) {
             let results = response.data.results;
             for (let result of results) {
-              this.addNode(result.identity, result.name, "organization" , node);
+              this.addNode(result.identity, result.name, "organization", node);
             }
             for (let result of results) {
-              this.addLink(result.relationship, node.id, result.identity);
+              this.addLink(result.relationship, id, result.identity);
             }
           } else {
             Notification.error({
@@ -261,15 +323,16 @@ export default {
               duration: 2000,
             });
           }
-        })
-        .catch(() => {
+        },
+        () => {
           this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "单点企业查询失败",
             duration: 2000,
           });
-        });
+        }
+      );
     },
     getPersonFromOrganization(id, node) {
       this.loading = true;
@@ -278,8 +341,8 @@ export default {
         baseURL: process.env.VUE_APP_API_BASE_URL,
         url: "/getPersonFromOrganization?id=" + id,
         timeout: 6000,
-      })
-        .then((response) => {
+      }).then(
+        (response) => {
           this.loading = false;
           console.log(response.data);
           if (response.data.success) {
@@ -288,8 +351,9 @@ export default {
               this.addNode(result.identity, result.name, "person", node);
             }
             for (let result of results) {
-              this.addLink(result.relationship, node.id, result.identity);
+              this.addLink(result.relationship, id, result.identity);
             }
+            console.log(this.links);
           } else {
             Notification.error({
               title: "出错啦",
@@ -297,18 +361,20 @@ export default {
               duration: 2000,
             });
           }
-        })
-        .catch(() => {
+        },
+        () => {
           this.loading = false;
           Notification.error({
             title: "网络中断",
             message: "单点个人查询失败",
             duration: 2000,
           });
-        });
+        }
+      );
     },
     handleSelect(item) {
-      console.log(this.currentItem)
+      this.disable_search = false,
+      console.log(this.currentItem);
       this.currentItem = item;
     },
     setTool(tool) {
@@ -322,15 +388,25 @@ export default {
     },
     addNode(id, name, type, node) {
       let nNode = { id: id, name: name, type: type };
-      if (node !== null) {
-        nNode.x = node.x + 50;
-        nNode.y = node.y + 50;
+      if (!this.nodes.find((node) => node.id === id)) {
+        if (node !== null) {
+          nNode.x = node.x + 50;
+          nNode.y = node.y + 50;
+        }
+        this.nodes.push(nNode);
       }
-      this.nodes.concat(nNode);
     },
     addLink(name, node_s, node_t) {
       let nLink = { id: this.lastLinkId, sid: node_s, tid: node_t, name: name };
-      this.links.concat(nLink);
+      if (
+        !this.links.find(
+          (link) =>
+            link.sid === node_s && link.tid === node_t && link.name === name
+        )
+      ) {
+        this.lastLinkId++;
+        this.links.push(nLink);
+      }
     },
     clearNet() {
       this.nodes.splice(0, this.nodes.length);
@@ -340,22 +416,30 @@ export default {
     nodeClick(event, node) {
       switch (this.tool) {
         case "checker":
-          if(node.type === "person"){
+          this.dialogProperties.splice(0, this.dialogProperties.length);
+          this.dialogProperties.push({
+            name: "name",
+            label: "名称",
+            value: node.name,
+          });
+          this.dialogProperties.push({
+            name: "id",
+            label: "编号",
+            value: node.id,
+          });
+          if (node.type === "person") {
             this.dialogType = "个人节点";
-            this.queryPerson
-          }
-          else{
+            this.queryPerson(node.id);
+          } else {
             this.dialogType = "企业节点";
+            this.queryOrganization(node.id);
           }
-          this.dialogName = node.name;
-          this.dialogVisible = true;
           break;
         case "expander":
-          if(node.type === "person"){
-            this.getOrganizationFromPerson(node.id, node)
-          }
-          else{
-            this.getPersonFromOrganization(node.id, node)
+          if (node.type === "person") {
+            this.getOrganizationFromPerson(node.id, node);
+          } else {
+            this.getPersonFromOrganization(node.id, node);
           }
           break;
         case "fixer":
@@ -368,8 +452,18 @@ export default {
     },
     linkClick(event, link) {
       if (this.tool === "checker") {
+        this.dialogProperties.splice(0, this.dialogProperties.length);
         this.dialogType = "关系";
-        this.dialogName = link.name;
+        this.dialogProperties.push({
+          name: "name",
+          label: "名称",
+          value: link.name,
+        });
+        this.dialogProperties.push({
+          name: "id",
+          label: "编号",
+          value: link.id,
+        });
         this.dialogVisible = true;
       }
     },
@@ -393,6 +487,9 @@ export default {
 <style>
 #search-button {
   margin-left: 2em;
+}
+#clear-button {
+  margin-right: 2em;
 }
 .el-select {
   margin-right: 2em;

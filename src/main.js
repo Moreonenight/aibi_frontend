@@ -6,7 +6,7 @@ import './plugins/element.js'
 
 Vue.config.productionTip = false
 
-import { Autocomplete, Row, Button, Select, Option, Dialog } from 'element-ui'
+import { Autocomplete, Row, Button, Select, Option, Dialog, Checkbox } from 'element-ui'
 
 Vue.use(Autocomplete)
 Vue.use(Button)
@@ -14,6 +14,7 @@ Vue.use(Row)
 Vue.use(Select)
 Vue.use(Option)
 Vue.use(Dialog)
+Vue.use(Checkbox)
 
 new Vue({
   router,
