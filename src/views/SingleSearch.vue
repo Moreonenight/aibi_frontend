@@ -399,7 +399,14 @@ export default {
       if (tool === this.tool) return "selected";
     },
     addNode(id, name, type, node) {
-      let nNode = { id: id, name: name, type: type };
+      let color = ""
+      if(type === "person"){
+        color = "orange";
+      }
+      else{
+        color = "green";
+      }
+      let nNode = { id: id, name: name, type: type, _color: color };
       if (!this.nodes.find((node) => node.id === id)) {
         if (node !== null) {
           nNode.x = node.x + 50;
